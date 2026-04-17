@@ -11,28 +11,26 @@ export interface WebhookPayload {
 
 /**
  * Sends a webhook payload to the configured VITE_WEBHOOK_URL.
- * If the URL is not set in the environment variables, this is a no-op.
+ * If the URL is not set in the environment variables, it throws an error.
  */
 export async function sendWebhook(payload: WebhookPayload) {
   const webhookUrl = import.meta.env.VITE_WEBHOOK_URL;
   
-  if (!webhookUrl) return;
-
-  try {
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Webhook responded with status ${response.status}`);
-    }
-
-    console.log(`Webhook sent successfully for event: ${payload.event}`);
-  } catch (error) {
-    console.error('Error sending webhook:', error);
+  if (!webhookUrl) {
+    throw new Error("Webhook URL is not configured. Please set the VITE_WEBHOOK_URL environment variable.");
   }
+
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Webhook responded with status ${response.status}`);
+  }
+
+  console.log(`Webhook sent successfully for event: ${payload.event}`);
 }

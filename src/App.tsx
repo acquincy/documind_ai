@@ -35,7 +35,7 @@ export default function App() {
     }
   };
 
-  const processFile = (file: File) => {
+  const processFile = async (file: File) => {
     if (file.type !== 'application/pdf') {
        setErrorMessage('Please upload a valid PDF file.');
        setUploadStatus('error');
@@ -46,31 +46,25 @@ export default function App() {
     setUploadStatus('uploading');
     setErrorMessage('');
     
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      const result = reader.result as string;
-      const base64 = result.split(',')[1];
+    try {
+      await sendWebhook({
+        event: 'document_uploaded',
+        file: file,
+        timestamp: new Date().toISOString(),
+      });
+      setUploadStatus('success');
+    } catch (error) {
+      console.error("Webhook error:", error);
       
-      try {
-        await sendWebhook({
-          event: 'document_uploaded',
-          fileName: file.name,
-          fileSize: file.size,
-          timestamp: new Date().toISOString(),
-          documentContent: base64
-        });
-        setUploadStatus('success');
-      } catch (error) {
-        console.error("Webhook error:", error);
-        setErrorMessage(error instanceof Error ? error.message : 'Unknown error occurred while sending webhook.');
-        setUploadStatus('error');
+      let msg = error instanceof Error ? error.message : 'Unknown error occurred while sending webhook.';
+      // Explain CORS issues since this is the most common webhook issue
+      if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+          msg = "Network Error: Could not reach the webhook. This is usually caused by CORS (Cross-Origin Resource Sharing) restrictions on the webhook receiver, or the URL being incorrect. Ensure your webhook provider (e.g. Zapier/Make) accepts cross-origin POST requests.";
       }
-    };
-    reader.onerror = () => {
-      setErrorMessage('Error reading file. Please try again.');
+      
+      setErrorMessage(msg);
       setUploadStatus('error');
-    };
+    }
   };
 
   const resetUpload = () => {

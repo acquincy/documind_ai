@@ -3,7 +3,7 @@ export type WebhookEvent = 'document_uploaded';
 export interface WebhookPayload {
   event: WebhookEvent;
   file: File;
-  timestamp: string;
+  userId: string;
 }
 
 /**
@@ -21,11 +21,21 @@ export async function sendWebhook(payload: WebhookPayload) {
   // restrictions that often block JSON webhook requests from the browser, 
   // and allows handling large files without base64 memory overhead.
   const formData = new FormData();
+  
+  const now = new Date();
+  
   formData.append('event', payload.event);
-  formData.append('timestamp', payload.timestamp);
+  formData.append('userId', payload.userId);
+  formData.append('timestamp', now.toISOString()); // ISO formatted time
+  formData.append('date', now.toLocaleDateString()); // Human readable date
+  
+  // File metadata
   formData.append('fileName', payload.file.name);
+  formData.append('fileType', payload.file.type);
   formData.append('fileSize', payload.file.size.toString());
-  formData.append('file', payload.file); // The actual file binary
+  
+  // The actual file binary
+  formData.append('file', payload.file); 
 
   // Important: We don't set the 'Content-Type' header manually! 
   // The browser automatically sets it to 'multipart/form-data; boundary=...'

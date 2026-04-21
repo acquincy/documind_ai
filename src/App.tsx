@@ -61,7 +61,7 @@ export default function App() {
       await sendWebhook({
         event: 'document_uploaded',
         file: file,
-        timestamp: new Date().toISOString(),
+        userId: 'emekaaaa373@gmail.com', // Added the user's hardcoded email
       });
       setUploadStatus('success');
     } catch (error) {

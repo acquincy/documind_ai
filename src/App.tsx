@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UploadCloud, FileText, Trash2, Database, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, Glasses, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { sendWebhook } from './lib/webhook';
 
 export default function App() {
@@ -36,8 +36,19 @@ export default function App() {
   };
 
   const processFile = async (file: File) => {
-    if (file.type !== 'application/pdf') {
-       setErrorMessage('Please upload a valid PDF file.');
+    const allowedTypes = [
+      'application/pdf',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    // Also check extensions as a fallback for some systems
+    const allowedExtensions = ['.pdf', '.txt', '.doc', '.docx'];
+    const hasAllowedExtension = allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+    if (!allowedTypes.includes(file.type) && !hasAllowedExtension) {
+       setErrorMessage('Please upload a valid PDF, DOCX, DOC, or TXT file.');
        setUploadStatus('error');
        return;
     }
@@ -75,20 +86,20 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-[#05070a] font-sans text-slate-50 overflow-hidden">
-      {/* Sidebar - PDF Info & Controls */}
+      {/* Sidebar - Document Info & Controls */}
       <aside className="w-80 border-r border-white/10 bg-[#0a0c12] flex flex-col p-6 shadow-sm z-10 shrink-0 hidden md:flex relative z-20">
         <div className="flex items-center gap-3 mb-8">
           <div className="bg-blue-500 p-2 rounded-lg shadow-[0_0_15px_rgba(59,130,246,0.3)] border border-blue-400">
-            <Database className="w-6 h-6 text-white" />
+            <Glasses className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-extrabold tracking-tight">PDF <span className="text-blue-500">READER</span></h1>
+          <h1 className="text-xl font-extrabold tracking-tight">UNDERSTAND <span className="text-blue-500">AI</span></h1>
         </div>
 
         {!pdfFile ? (
           <div className="flex-1 flex flex-col justify-center">
             <h2 className="text-sm uppercase tracking-widest text-slate-400 font-semibold mb-2">Upload Document</h2>
-            <p className="text-sm text-slate-400">
-              Upload a PDF to deliver its content directly to your external webhook endpoint for processing.
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Drop a file in the upload area to get started. We support PDF, Word documents, and text files.
             </p>
           </div>
         ) : (
@@ -113,7 +124,7 @@ export default function App() {
               className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium"
             >
               <Trash2 className="w-4 h-4" />
-              Remove PDF
+              Remove File
             </button>
           </div>
         )}
@@ -124,8 +135,8 @@ export default function App() {
         {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-[#0a0c12] to-[#05070a] z-20 relative">
            <div className="flex items-center gap-2">
-             <Database className="w-5 h-5 text-blue-500" />
-             <span className="font-extrabold tracking-tight">PDF <span className="text-blue-500">READER</span></span>
+             <Glasses className="w-5 h-5 text-blue-500" />
+             <span className="font-extrabold tracking-tight">UNDERSTAND <span className="text-blue-500">AI</span></span>
            </div>
            {pdfFile && (
              <button onClick={resetUpload} className="p-2 text-slate-400 rounded-md hover:bg-white/5">
@@ -164,12 +175,12 @@ export default function App() {
                       </>
                     )}
                   </p>
-                  <p className="text-sm text-slate-400">PDF files only (max 20MB)</p>
+                  <p className="text-sm text-slate-400">PDF, DOC, DOCX, TXT only (max 20MB)</p>
                 </div>
                 <input 
                   id="pdf-upload" 
                   type="file" 
-                  accept="application/pdf" 
+                  accept=".pdf,.doc,.docx,.txt,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
                   className="hidden" 
                   onChange={handleChange}
                   disabled={uploadStatus === 'uploading'}

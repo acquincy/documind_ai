@@ -1,6 +1,6 @@
 {
-  "name": "ChatPDF",
-  "description": "Upload a PDF document and chat with it to extract insights and summaries using AI.",
+  "name": "Understand AI",
+  "description": "Upload a PDF, doc, or plain text document to deliver its content to a webhook for AI processing.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

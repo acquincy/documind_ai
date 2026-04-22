@@ -39,19 +39,17 @@ export default function App() {
     const allowedTypes = [
       'application/pdf',
       'text/plain',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'text/csv',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ];
     
     // Also check extensions as a fallback for some systems
-    const allowedExtensions = ['.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx'];
+    const allowedExtensions = ['.pdf', '.txt', '.csv', '.xls', '.xlsx'];
     const hasAllowedExtension = allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
 
     if (!allowedTypes.includes(file.type) && !hasAllowedExtension) {
-       setErrorMessage('Please upload a valid document (PDF, Word, Excel, CSV, or TXT).');
+       setErrorMessage('Please upload a valid document (PDF, Excel, CSV, or TXT).');
        setUploadStatus('error');
        return;
     }
@@ -102,7 +100,7 @@ export default function App() {
           <div className="flex-1 flex flex-col justify-center">
             <h2 className="text-sm uppercase tracking-widest text-slate-400 font-semibold mb-2">Upload Document</h2>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Drop a file in the upload area to get started. We support PDF, Word, Excel, CSV, and text files.
+              Drop a file in the upload area to get started. We support PDF, Excel, CSV, and text files.
             </p>
           </div>
         ) : (
@@ -178,12 +176,12 @@ export default function App() {
                       </>
                     )}
                   </p>
-                  <p className="text-sm text-slate-400">PDF, Word, Excel, CSV, TXT (max 20MB)</p>
+                  <p className="text-sm text-slate-400">PDF, Excel, CSV, TXT (max 20MB)</p>
                 </div>
                 <input 
                   id="pdf-upload" 
                   type="file" 
-                  accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+                  accept=".pdf,.txt,.csv,.xls,.xlsx,application/pdf,text/plain,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
                   className="hidden" 
                   onChange={handleChange}
                   disabled={uploadStatus === 'uploading'}

@@ -35,7 +35,8 @@ export async function sendWebhook(payload: WebhookPayload) {
   formData.append('fileSize', payload.file.size.toString());
   
   // The actual file binary
-  formData.append('file', payload.file); 
+  // Set as 'data' to match specific requirements for n8n's workflow nodes expecting this binary property name
+  formData.append('data', payload.file); 
 
   // Important: We don't set the 'Content-Type' header manually! 
   // The browser automatically sets it to 'multipart/form-data; boundary=...'

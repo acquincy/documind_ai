@@ -1,9 +1,10 @@
-export type WebhookEvent = 'document_uploaded';
+export type WebhookEvent = 'document_uploaded' | 'chat_message';
 
 export interface WebhookPayload {
   event: WebhookEvent;
-  file: File;
   userId: string;
+  file?: File;
+  message?: string;
 }
 
 /**
@@ -11,10 +12,14 @@ export interface WebhookPayload {
  * If the URL is not set in the environment variables, it throws an error.
  */
 export async function sendWebhook(payload: WebhookPayload) {
-  const webhookUrl = import.meta.env.VITE_WEBHOOK_URL;
+  let webhookUrl = import.meta.env.VITE_WEBHOOK_URL;
+  
+  if (payload.event === 'chat_message') {
+    webhookUrl = import.meta.env.VITE_CHAT_WEBHOOK_URL || webhookUrl;
+  }
   
   if (!webhookUrl) {
-    throw new Error("Webhook URL is not configured. Please add VITE_WEBHOOK_URL to your .env file and restart your local server.");
+    throw new Error("Webhook URL is not configured. Please add VITE_WEBHOOK_URL or VITE_CHAT_WEBHOOK_URL to your environment variables.");
   }
 
   // Create a FormData object. Using FormData natively bypasses many CORS preflight 
@@ -29,14 +34,20 @@ export async function sendWebhook(payload: WebhookPayload) {
   formData.append('timestamp', now.toISOString()); // ISO formatted time
   formData.append('date', now.toLocaleDateString()); // Human readable date
   
-  // File metadata
-  formData.append('fileName', payload.file.name);
-  formData.append('fileType', payload.file.type);
-  formData.append('fileSize', payload.file.size.toString());
+  // File metadata and binary
+  if (payload.file) {
+    formData.append('fileName', payload.file.name);
+    formData.append('fileType', payload.file.type);
+    formData.append('fileSize', payload.file.size.toString());
+    
+    // The actual file binary
+    // Set as 'data' to match specific requirements for n8n's workflow nodes expecting this binary property name
+    formData.append('data', payload.file); 
+  }
   
-  // The actual file binary
-  // Set as 'data' to match specific requirements for n8n's workflow nodes expecting this binary property name
-  formData.append('data', payload.file); 
+  if (payload.message) {
+    formData.append('message', payload.message);
+  }
 
   // Important: We don't set the 'Content-Type' header manually! 
   // The browser automatically sets it to 'multipart/form-data; boundary=...'

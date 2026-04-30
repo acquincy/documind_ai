@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_WEBHOOK_URL: string;
+  readonly VITE_CHAT_WEBHOOK_URL: string;
 }
 
 interface ImportMeta {

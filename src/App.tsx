@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileText, Trash2, Glasses, Loader2, CheckCircle, AlertCircle, RefreshCw, Menu, Send, Bot, User, MessageSquare } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, Glasses, Loader2, CheckCircle, AlertCircle, RefreshCw, Menu, Send, Bot, User, MessageSquare, LogOut, Paperclip, PanelLeftClose, PanelRightClose, Plus, Search, MessageCircle } from 'lucide-react';
 import { sendWebhook } from './lib/webhook';
+import { motion, AnimatePresence } from 'motion/react';
+import Login from './components/Login';
 
 interface Message {
   id: string;
@@ -9,6 +11,8 @@ interface Message {
 }
 
 export default function App() {
+  const [user, setUser] = useState<{username: string, email: string, name?: string} | null>(null);
+
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
@@ -19,6 +23,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll chat
@@ -37,7 +42,7 @@ export default function App() {
     try {
       await sendWebhook({
         event: 'chat_message',
-        userId: 'emekaaaa373@gmail.com', // user ID based on previous requirements
+        userId: user?.email || 'emekaaaa373@gmail.com', // user ID based on previous requirements and new auth
         message: userMessage,
       });
       
@@ -109,7 +114,7 @@ export default function App() {
       await sendWebhook({
         event: 'document_uploaded',
         file: file,
-        userId: 'emekaaaa373@gmail.com', // Added the user's hardcoded email
+        userId: user?.email || 'emekaaaa373@gmail.com', // Added the user's email
       });
       setUploadStatus('success');
       setMessages(prev => [...prev, { 
@@ -138,92 +143,205 @@ export default function App() {
     setMessages([]);
   };
 
+  const handleLogin = (username: string, email: string) => {
+    setUser({ username, email });
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    resetUpload(); // clean session
+  };
+
+  if (!user) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
-    <div className="flex h-screen bg-[#05070a] font-sans text-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-[#0a0c12] font-sans text-slate-50 overflow-hidden">
       {/* Sidebar - Chat History & Document Info */}
-      <aside 
-        className={`transition-all duration-300 ease-in-out border-r border-white/10 bg-[#0a0c12] flex flex-col shadow-sm z-20 shrink-0 absolute md:relative h-full ${
-          sidebarOpen ? 'w-80 translate-x-0' : 'w-80 -translate-x-full md:w-[88px] md:translate-x-0 overflow-x-hidden'
-        }`}
+      <motion.aside 
+        initial={false}
+        animate={{ width: sidebarOpen ? 320 : 88 }}
+        className="border-r border-white/5 bg-[#0a0c12] flex flex-col z-20 shrink-0 absolute md:relative h-full overflow-x-hidden"
       >
-        <div className="p-6 flex-1 flex flex-col overflow-hidden w-80">
+        <div className="p-6 flex-1 flex flex-col w-full">
           <div className="flex items-center justify-between mb-8 w-full pr-1">
             <div className="flex items-center gap-3">
-              <div 
-                className="bg-blue-500 p-2 rounded-lg shadow-[0_0_15px_rgba(59,130,246,0.3)] border border-blue-400 shrink-0 cursor-pointer"
+              <motion.div 
+                whileHover={{ rotate: 15, scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-tr from-blue-600 to-purple-500 p-2.5 rounded-xl shadow-lg shadow-purple-500/25 border border-white/10 shrink-0 cursor-pointer"
                 onClick={() => !sidebarOpen && setSidebarOpen(true)}
                 title={!sidebarOpen ? "Expand sidebar" : ""}
               >
                 <Glasses className="w-6 h-6 text-white" />
-              </div>
-              <h1 className={`text-xl font-extrabold tracking-tight transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
-                UNDERSTAND <span className="text-blue-500">AI</span>
-              </h1>
+              </motion.div>
+              <motion.h1 
+                animate={{ opacity: sidebarOpen ? 1 : 0 }}
+                className={`text-xl font-extrabold tracking-tight whitespace-nowrap overflow-hidden ${!sidebarOpen ? 'w-0' : 'w-auto'}`}
+              >
+                UNDERSTAND <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">AI</span>
+              </motion.h1>
             </div>
             {/* Contextual close button */}
-            <button onClick={() => setSidebarOpen(false)} className={`p-2 text-slate-400 hover:text-white rounded-md hover:bg-white/5 transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <Menu className="w-5 h-5" />
-            </button>
+            <motion.button 
+              animate={{ opacity: sidebarOpen ? 1 : 0 }}
+              onClick={() => setSidebarOpen(false)} 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className={`p-1.5 text-slate-500 hover:text-purple-400 hover:bg-gradient-to-r hover:from-blue-600/10 hover:to-purple-500/10 rounded-lg transition-all border border-transparent hover:border-purple-500/20 shadow-none hover:shadow-[0_0_15px_rgba(168,85,247,0.15)] ${!sidebarOpen && 'pointer-events-none hidden'}`}
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </motion.button>
           </div>
 
-          <div className={`flex-1 overflow-y-auto mb-6 flex flex-col gap-4 transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="text-xs uppercase tracking-widest text-slate-400 font-semibold sticky top-0 bg-[#0a0c12] py-2">Chat History</div>
-            {messages.length === 0 ? (
-              <p className="text-sm text-slate-500 italic">No previous chats. Upload a document to start.</p>
-            ) : (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition mr-2">
-                <MessageSquare className="w-4 h-4 text-slate-400 shrink-0" />
-                <div className="truncate text-sm text-slate-300">Current Session</div>
-              </div>
-            )}
+          <div className="flex-1 flex flex-col gap-1 overflow-y-auto mb-6 mt-4">
+            {/* Main Options */}
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`flex items-center gap-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors ${sidebarOpen ? 'p-3 mx-1 mr-3 mb-2' : 'w-10 h-10 justify-center mx-auto mb-2'}`}
+              title={!sidebarOpen ? "New Chat" : undefined}
+            >
+              <Plus className={`shrink-0 ${sidebarOpen ? 'w-4 h-4 text-slate-300' : 'w-5 h-5 text-slate-300'}`} />
+              <motion.span animate={{ opacity: sidebarOpen ? 1 : 0 }} className={`${!sidebarOpen && 'hidden'} font-semibold text-sm text-slate-200`}>New Chat</motion.span>
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`flex items-center gap-3 rounded-xl hover:bg-white/5 transition-colors ${sidebarOpen ? 'p-3 mx-1 mr-3' : 'w-10 h-10 justify-center mx-auto'}`}
+              title={!sidebarOpen ? "Search" : undefined}
+            >
+              <Search className={`shrink-0 ${sidebarOpen ? 'w-4 h-4 text-slate-400' : 'w-5 h-5 text-slate-400'}`} />
+              <motion.span animate={{ opacity: sidebarOpen ? 1 : 0 }} className={`${!sidebarOpen && 'hidden'} font-medium text-sm text-slate-400`}>Search</motion.span>
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`flex items-center gap-3 rounded-xl hover:bg-white/5 transition-colors ${sidebarOpen ? 'p-3 mx-1 mr-3' : 'w-10 h-10 justify-center mx-auto'}`}
+              title={!sidebarOpen ? "Chats" : undefined}
+            >
+              <MessageCircle className={`shrink-0 ${sidebarOpen ? 'w-4 h-4 text-slate-400' : 'w-5 h-5 text-slate-400'}`} />
+              <motion.span animate={{ opacity: sidebarOpen ? 1 : 0 }} className={`${!sidebarOpen && 'hidden'} font-medium text-sm text-slate-400 flex-1 text-left`}>Chats</motion.span>
+              {sidebarOpen && messages.length > 0 && (
+                 <span className="text-xs bg-white/10 text-slate-300 py-0.5 px-2 rounded-full">{messages.length > 0 ? 1 : 0}</span>
+              )}
+            </motion.button>
+
+            {/* Chats List */}
+            <motion.div animate={{ opacity: sidebarOpen ? 1 : 0 }} className={`${!sidebarOpen && 'hidden'} mt-4`}>
+              {messages.length === 0 ? (
+                <p className="text-sm text-slate-500 italic px-4">No previous chats.</p>
+              ) : (
+                <motion.div 
+                  whileHover={{ scale: 1.02 }}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition mx-1 mr-3 relative group"
+                >
+                  <div className="absolute inset-x-0 -bottom-[1px] h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <MessageSquare className="w-4 h-4 text-slate-400 shrink-0" />
+                  <div className="truncate text-sm font-medium text-slate-200">
+                    {pdfFile ? pdfFile.name : 'Current Session'}
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
           </div>
 
-          {pdfFile && (
-            <div className={`mt-auto shrink-0 border-t border-white/10 pt-6 transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <div className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-3">Active Document</div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 backdrop-blur-sm mr-2">
-                <div className="flex items-start gap-3 w-full">
-                  <FileText className="w-6 h-6 text-blue-500 shrink-0 mt-1" />
-                  <div className="overflow-hidden min-w-0">
-                    <p className="font-medium text-sm truncate text-slate-50" title={pdfFile.name}>
-                      {pdfFile.name}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+          <AnimatePresence>
+            {pdfFile && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: sidebarOpen ? 1 : 0, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className={`mt-auto shrink-0 border-t border-white/5 pt-6 mb-4 ${!sidebarOpen && 'pointer-events-none'}`}
+              >
+                <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-3">Active Document</div>
+                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 mb-4 backdrop-blur-md relative overflow-hidden group">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-purple-500/0 blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="flex items-start gap-3 w-full relative z-10">
+                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                      <FileText className="w-5 h-5 text-blue-400 shrink-0" />
+                    </div>
+                    <div className="overflow-hidden min-w-0 pt-0.5">
+                      <p className="font-semibold text-sm truncate text-slate-100" title={pdfFile.name}>
+                        {pdfFile.name}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                        {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <button
-                onClick={resetUpload}
-                className="w-[calc(100%-8px)] flex items-center justify-center gap-2 py-2 px-4 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium"
+                
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={resetUpload}
+                  className="w-[calc(100%-8px)] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white transition-colors text-sm font-semibold mb-3 mr-2"
+                >
+                  <Trash2 className="w-4 h-4 text-slate-400" />
+                  Remove File
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {!pdfFile && <div className="mt-auto" />}
+
+          <div className="shrink-0 border-t border-white/5 pt-4 flex flex-col gap-2">
+            <div className={`flex items-center gap-3 transition-colors ${sidebarOpen ? 'p-3 rounded-2xl bg-white/[0.03] border border-white/5 mr-2' : ''}`}>
+              <div 
+                className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 text-white flex items-center justify-center shrink-0 shadow-lg"
+                title={user?.email}
               >
-                <Trash2 className="w-4 h-4" />
-                Remove File
-              </button>
+                <User className="w-5 h-5" />
+              </div>
+              <motion.div animate={{ opacity: sidebarOpen ? 1 : 0 }} className={`${!sidebarOpen && 'hidden'} overflow-hidden`}>
+                <p className="font-semibold text-sm text-slate-50 truncate">{user?.username}</p>
+                <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+              </motion.div>
             </div>
-          )}
+
+            <motion.button
+               whileHover={{ scale: sidebarOpen ? 1.02 : 1.1 }}
+               whileTap={{ scale: 0.95 }}
+               onClick={() => setShowLogoutDialog(true)}
+               className={`flex items-center gap-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors text-sm font-semibold mt-1 ${
+                 sidebarOpen ? 'w-[calc(100%-8px)] py-2.5 px-4 justify-center mr-2' : 'w-10 h-10 justify-center p-0'
+               }`}
+               title={!sidebarOpen ? "Sign Out" : undefined}
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              {sidebarOpen && <span>Sign Out</span>}
+            </motion.button>
+          </div>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content - Chat & Upload Area */}
-      <main className="flex-1 flex flex-col h-full bg-[radial-gradient(circle_at_center,_#0f172a_0%,_#05070a_100%)] relative z-10 min-w-0">
+      <main className="flex-1 flex flex-col h-full bg-[#0a0c12] relative z-10 min-w-0">
         {/* Header */}
-        <div className="flex items-center p-4 border-b border-white/10 bg-[#0a0c12]/80 backdrop-blur-md z-10 relative shrink-0 h-[73px]">
-          <button onClick={() => setSidebarOpen(true)} className={`p-2 mr-4 text-slate-400 hover:text-white rounded-md hover:bg-white/5 transition-colors md:hidden ${sidebarOpen ? 'opacity-0 pointer-events-none' : ''}`}>
-            <Menu className="w-5 h-5" />
+        <div className="flex items-center p-4 bg-transparent z-10 relative shrink-0 h-[73px]">
+          <button onClick={() => setSidebarOpen(true)} className={`p-1.5 mr-4 text-slate-500 hover:text-purple-400 rounded-lg hover:bg-gradient-to-r hover:from-blue-600/10 hover:to-purple-500/10 transition-all md:hidden border border-transparent hover:border-purple-500/20 shadow-none hover:shadow-[0_0_15px_rgba(168,85,247,0.15)] ${sidebarOpen ? 'opacity-0 pointer-events-none' : ''}`}>
+            <PanelRightClose className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2 md:hidden">
-            <Glasses className="w-5 h-5 text-blue-500" />
-            <span className="font-extrabold tracking-tight">UNDERSTAND <span className="text-blue-500">AI</span></span>
+            <div className="bg-gradient-to-tr from-blue-600 to-purple-500 p-1.5 rounded-lg shadow-lg shadow-purple-500/25 border border-white/10">
+              <Glasses className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-extrabold tracking-tight">UNDERSTAND <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">AI</span></span>
           </div>
         </div>
 
         {/* Scrollable Content or Dropzone */}
         <div className="flex-1 overflow-y-auto w-full relative scroll-smooth flex flex-col">
           {(!pdfFile && messages.length === 0) ? (
-            <div className="flex-1 flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="flex-1 flex items-center justify-center p-6"
+            >
               <div 
                 className={`w-full max-w-xl transition-all duration-300 ${dragActive ? 'scale-105' : ''}`}
               >
@@ -233,22 +351,24 @@ export default function App() {
                   onDragOver={handleDrag}
                   onDragLeave={handleDrag}
                   onDrop={handleDrop}
-                  className={`flex flex-col items-center justify-center w-full h-80 rounded-2xl border-2 border-dashed cursor-pointer transition-colors duration-200 ${
-                    dragActive ? 'border-blue-500 bg-[rgba(59,130,246,0.1)]' : 'border-white/20 hover:border-white/40 hover:bg-white/5 bg-[#0d1117]/80 backdrop-blur-md'
+                  className={`flex flex-col items-center justify-center w-full h-80 rounded-[2rem] border-2 border-dashed cursor-pointer transition-all duration-300 relative overflow-hidden ${
+                    dragActive ? 'border-blue-500 bg-blue-500/10 backdrop-blur-3xl drop-shadow-[0_0_30px_rgba(59,130,246,0.15)]' : 'border-white/10 hover:border-blue-500/50 hover:bg-white/[0.04] bg-white/[0.02] backdrop-blur-3xl shadow-2xl'
                   }`}
                 >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+                  
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4 relative z-10">
                     {uploadStatus === 'uploading' ? (
-                      <Loader2 className="w-12 h-12 text-blue-500 mb-4 animate-spin drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]" />
+                      <Loader2 className="w-14 h-14 text-blue-500 mb-6 animate-spin filter drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
                     ) : (
-                      <UploadCloud className={`w-12 h-12 mb-4 transition-colors ${dragActive ? 'text-blue-500 filter drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'text-slate-400'}`} />
+                      <UploadCloud className={`w-14 h-14 mb-6 transition-all duration-300 ${dragActive ? 'text-blue-500 filter drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-110' : 'text-slate-500 group-hover:text-slate-400'}`} />
                     )}
-                    <p className="mb-2 text-lg font-medium text-slate-50">
+                    <h3 className="mb-3 text-2xl font-bold text-slate-100 tracking-tight">
                       {uploadStatus === 'uploading' ? 'Sending to Webhook...' : (
-                        <><span className="font-semibold">Click to upload</span> or drag and drop</>
+                        <>Click or drag file to start</>
                       )}
-                    </p>
-                    <p className="text-sm text-slate-400">PDF, Excel, CSV, TXT (max 20MB)</p>
+                    </h3>
+                    <p className="text-sm text-slate-400 font-medium">Supports PDF, Excel, CSV, TXT (max 20MB)</p>
                   </div>
                   <input 
                     id="pdf-upload" 
@@ -260,76 +380,157 @@ export default function App() {
                   />
                 </label>
               </div>
-            </div>
+            </motion.div>
           ) : (
-            <div className="w-full max-w-3xl mx-auto p-4 md:p-6 pb-8 flex flex-col gap-6 mt-4">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.role !== 'user' && (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
-                      msg.role === 'system' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-blue-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.3)]'
+            <div className="w-full max-w-3xl mx-auto p-4 md:p-8 flex flex-col gap-6 mt-2">
+              <AnimatePresence initial={false}>
+                {messages.map((msg) => (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    key={msg.id} 
+                    className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {msg.role !== 'user' && (
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg ${
+                        msg.role === 'system' ? 'bg-slate-800/80 text-emerald-400 border border-emerald-500/20' : 'bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-blue-500/20'
+                      }`}>
+                        {msg.role === 'system' ? <CheckCircle className="w-4 h-4" /> : <Bot className="w-5 h-5" />}
+                      </div>
+                    )}
+                    
+                    <div className={`max-w-[85%] rounded-2xl px-5 py-3.5 leading-relaxed border ${
+                      msg.role === 'user' 
+                        ? 'bg-blue-600/10 border-blue-500/20 text-blue-100 rounded-br-sm shadow-sm' 
+                        : msg.role === 'system'
+                          ? 'bg-transparent border-transparent text-slate-400 rounded-bl-sm text-sm italic font-medium'
+                          : 'bg-white/[0.03] border-white/5 text-slate-100 rounded-bl-sm shadow-md'
                     }`}>
-                      {msg.role === 'system' ? <CheckCircle className="w-4 h-4" /> : <Bot className="w-5 h-5" />}
+                      {msg.content}
                     </div>
-                  )}
-                  
-                  <div className={`max-w-[85%] rounded-2xl px-5 py-3 ${
-                    msg.role === 'user' 
-                      ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-br-sm shadow-sm' 
-                      : msg.role === 'system'
-                        ? 'bg-white/5 border border-white/10 text-slate-300 rounded-bl-sm text-sm italic'
-                        : 'bg-[#1e2330] border border-white/10 text-slate-100 rounded-bl-sm shadow-md'
-                  }`}>
-                    {msg.content}
-                  </div>
 
-                  {msg.role === 'user' && (
-                    <div className="w-8 h-8 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 mt-1">
-                      <User className="w-5 h-5" />
-                    </div>
-                  )}
-                </div>
-              ))}
+                    {msg.role === 'user' && (
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-lg">
+                        <User className="w-5 h-5" />
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
               
-              {uploadStatus === 'error' && (
-                <div className="flex gap-4">
-                   <div className="w-8 h-8 rounded-full bg-red-500/20 text-red-500 border border-red-500/30 flex items-center justify-center shrink-0 mt-1">
-                     <AlertCircle className="w-4 h-4" />
-                   </div>
-                   <div className="max-w-[85%] rounded-2xl px-5 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-bl-sm text-sm">
-                     {errorMessage}
-                   </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
+              <AnimatePresence>
+                {uploadStatus === 'error' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex gap-4"
+                  >
+                     <div className="w-9 h-9 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center shrink-0 mt-0.5 shadow-lg">
+                       <AlertCircle className="w-5 h-5" />
+                     </div>
+                     <div className="max-w-[85%] rounded-2xl px-5 py-3.5 bg-red-500/5 border border-red-500/20 text-red-200 rounded-bl-sm text-sm leading-relaxed backdrop-blur-sm">
+                       {errorMessage}
+                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div ref={messagesEndRef} className="h-4" />
             </div>
           )}
         </div>
 
         {/* Chat Input Bar */}
-        <div className="p-4 bg-[#0a0c12]/90 backdrop-blur-lg border-t border-white/10 w-full shrink-0">
-          <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto relative flex items-center">
+        <div className="p-4 md:p-6 bg-transparent w-full shrink-0 relative z-20">
+          <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto relative flex items-center group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur opacity-0 group-focus-within:opacity-20 transition duration-500"></div>
+            
+            {!pdfFile && (
+              <label 
+                title="Upload document"
+                className={`absolute left-2 z-10 p-3 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-full transition-colors cursor-pointer ${uploadStatus === 'uploading' ? 'opacity-50 pointer-events-none' : ''}`}
+              >
+                <Paperclip className="w-5 h-5" />
+                <input 
+                  type="file" 
+                  accept=".pdf,.txt,.csv,.xls,.xlsx,application/pdf,text/plain,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+                  className="hidden" 
+                  onChange={handleChange}
+                  disabled={uploadStatus === 'uploading'}
+                />
+              </label>
+            )}
+
             <input
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder={pdfFile ? "Ask a question about your document..." : "Upload a document to start chatting..."}
-              disabled={!pdfFile || uploadStatus === 'uploading'}
-              className="w-full bg-[#1e2330] border border-white/10 rounded-full py-4 pl-6 pr-14 text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
+              placeholder={pdfFile ? "Ask a question about your document..." : "Type a message or attach a document..."}
+              disabled={uploadStatus === 'uploading'}
+              className={`relative w-full bg-[#0a0c12] border border-white/10 rounded-full py-4 ${!pdfFile ? 'pl-14' : 'pl-6'} pr-16 text-slate-50 placeholder:text-slate-500 focus:outline-none focus:border-blue-500/50 transition-all focus:bg-white/[0.02] shadow-inner disabled:opacity-50 disabled:cursor-not-allowed font-medium text-[15px]`}
             />
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               type="submit"
-              disabled={!chatInput.trim() || !pdfFile || uploadStatus === 'uploading'}
-              className="absolute right-2 p-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full disabled:opacity-50 disabled:hover:bg-blue-500 transition-colors shadow-md"
+              disabled={!chatInput.trim() || uploadStatus === 'uploading'}
+              className="absolute right-2 p-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full disabled:opacity-50 disabled:from-slate-700 disabled:to-slate-700 transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:shadow-[0_0_25px_rgba(168,85,247,0.5)]"
             >
               <Send className="w-5 h-5" />
-            </button>
+            </motion.button>
           </form>
-          <div className="text-center mt-2">
-             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">AI can make mistakes. Verify important info.</p>
+          <div className="text-center mt-3">
+             <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold">AI can make mistakes. Verify important info.</p>
           </div>
         </div>
       </main>
+
+      {/* Logout Confirmation Dialog */}
+      <AnimatePresence>
+        {showLogoutDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white/[0.02] backdrop-blur-3xl border border-white/10 rounded-[2rem] p-6 md:p-8 max-w-sm w-full shadow-2xl shadow-black/50 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+              
+              <h2 className="text-2xl font-extrabold tracking-tight text-white mb-2 relative z-10">
+                Sign Out
+              </h2>
+              <p className="text-sm text-slate-400 mb-8 relative z-10 font-medium">
+                Are you sure you want to sign out of Understand <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-bold">AI</span>?
+              </p>
+              
+              <div className="flex gap-3 relative z-10">
+                <button
+                  onClick={() => setShowLogoutDialog(false)}
+                  className="flex-1 py-3 px-4 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 hover:text-white transition-colors text-sm font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowLogoutDialog(false);
+                    handleLogout();
+                  }}
+                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all text-sm font-bold"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
